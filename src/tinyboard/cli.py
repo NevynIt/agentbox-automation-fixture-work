@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import __version__
 from .persistence import PersistenceError, load_tasks, save_tasks
-from .task import Task, next_task_id
+from .task import Task, next_task_id, title_comparison_key
 
 
 DEFAULT_DATABASE = ".tinyboard.json"
@@ -45,6 +45,21 @@ def _run_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> i
     try:
         tasks = load_tasks(args.db)
         if args.command == "add":
+            comparison_key = title_comparison_key(args.title)
+            duplicate = next(
+                (
+                    task
+                    for task in tasks
+                    if not task.completed
+                    and not task.archived
+                    and title_comparison_key(task.title) == comparison_key
+                ),
+                None,
+            )
+            if duplicate is not None:
+                parser.error(
+                    f"an active task with this title already exists (ID: {duplicate.id})"
+                )
             task = Task.new(next_task_id(tasks), args.title)
             tasks.append(task)
             save_tasks(args.db, tasks)

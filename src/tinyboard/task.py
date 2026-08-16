@@ -21,6 +21,11 @@ def normalize_title(title: str) -> str:
     return normalized
 
 
+def title_comparison_key(title: str) -> str:
+    """Return the normalized, case-insensitive comparison key for a title."""
+    return normalize_title(title).casefold()
+
+
 @dataclass
 class Task:
     """A TinyBoard task and its domain state."""

@@ -80,6 +80,29 @@ class TinyBoardCliTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(after, before)
 
+    def test_duplicate_active_title_is_rejected_case_insensitively(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.assertEqual(self.run_cli(database, "add", "  Straße  ").returncode, 0)
+            before = database.read_bytes()
+            result = self.run_cli(database, "add", "STRASSE")
+            after = database.read_bytes()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("already exists", result.stderr)
+        self.assertEqual(after, before)
+
+    def test_completed_title_can_be_added_again(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.assertEqual(self.run_cli(database, "add", "Buy milk").returncode, 0)
+            self.assertEqual(self.run_cli(database, "complete", "1").returncode, 0)
+            result = self.run_cli(database, "add", " buy   MILK ")
+            listed = self.run_cli(database, "list")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(listed.stdout, "1\t[x]\tBuy milk\n2\t[ ]\tbuy MILK\n")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -29,3 +29,10 @@ python3 -m unittest discover -s tests -v
 ```
 
 The five ADR features are intentionally **not implemented** in this initial repository. They are the work for the AgentBox ADR-0017 orchestration acceptance fixture.
+
+## Duplicate active titles
+
+`add` rejects a title when its normalized, case-insensitive comparison key
+(`normalize_title(title).casefold()`) matches an existing active task. The
+command exits unsuccessfully and leaves the database unchanged. Completed or
+archived tasks do not block adding the same title again.
