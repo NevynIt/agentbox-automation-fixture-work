@@ -31,6 +31,10 @@ def load_tasks(path: str | os.PathLike[str]) -> list[Task]:
         raise PersistenceError(
             f"invalid JSON in TinyBoard database {database_path}: {exc.msg}"
         ) from exc
+    except UnicodeDecodeError as exc:
+        raise PersistenceError(
+            f"invalid JSON encoding in TinyBoard database {database_path}: UTF-8 decoding failed"
+        ) from exc
     except OSError as exc:
         raise PersistenceError(
             f"could not read TinyBoard database {database_path}: {exc}"
@@ -132,4 +136,3 @@ class JsonPersistence:
 
     def save(self, tasks: Iterable[Task]) -> None:
         save_tasks(self.path, tasks)
-

@@ -46,6 +46,15 @@ class PersistenceTests(unittest.TestCase):
                 load_tasks(path)
             self.assertEqual(path.read_text(), original)
 
+    def test_invalid_utf8_is_rejected_without_overwriting_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "board.json"
+            original = b'{"version": 1, "tasks": [\xff]}'
+            path.write_bytes(original)
+            with self.assertRaisesRegex(PersistenceError, "invalid JSON encoding"):
+                load_tasks(path)
+            self.assertEqual(path.read_bytes(), original)
+
     def test_unsupported_version_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "board.json"
