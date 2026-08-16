@@ -33,8 +33,7 @@ class Task:
     def __post_init__(self) -> None:
         if isinstance(self.id, bool) or not isinstance(self.id, int) or self.id <= 0:
             raise ValueError("id must be a positive integer")
-        if not isinstance(self.title, str) or not self.title:
-            raise ValueError("title must be a non-empty string")
+        self.title = normalize_title(self.title)
         if not isinstance(self.completed, bool):
             raise TypeError("completed must be a boolean")
         if not isinstance(self.archived, bool):

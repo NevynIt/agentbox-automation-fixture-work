@@ -18,6 +18,15 @@ class TaskTests(unittest.TestCase):
         self.assertFalse(task.completed)
         self.assertFalse(task.archived)
 
+    def test_direct_task_construction_normalizes_title(self) -> None:
+        task = Task(1, "  Buy\t  milk ")
+
+        self.assertEqual(task.title, "Buy milk")
+
+    def test_direct_task_construction_rejects_empty_normalized_title(self) -> None:
+        with self.assertRaises(ValueError):
+            Task(1, " \t\n ")
+
     def test_title_normalization_rejects_empty_result(self) -> None:
         with self.assertRaises(ValueError):
             normalize_title(" \t\n ")
