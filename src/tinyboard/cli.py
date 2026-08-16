@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from . import __version__
@@ -28,6 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("list")
     complete_parser = commands.add_parser("complete")
     complete_parser.add_argument("id", type=_task_id)
+    archive_parser = commands.add_parser("archive")
+    archive_parser.add_argument("id", type=_task_id)
+    commands.add_parser("summary")
     return parser
 
 
@@ -83,6 +87,30 @@ def _run_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> i
                 task.completed = True
                 save_tasks(args.db, tasks)
             print(f"completed {task.id}")
+            return 0
+
+        if args.command == "archive":
+            task = next((task for task in tasks if task.id == args.id), None)
+            if task is None:
+                parser.error(f"unknown task ID: {args.id}")
+            if not task.completed:
+                parser.error(f"task {task.id} is incomplete and cannot be archived")
+            if not task.archived:
+                task.archived = True
+                save_tasks(args.db, tasks)
+            print(f"archived {task.id}")
+            return 0
+
+        if args.command == "summary":
+            archived = sum(task.archived for task in tasks)
+            completed = sum(task.completed and not task.archived for task in tasks)
+            active = sum(not task.completed and not task.archived for task in tasks)
+            print(json.dumps({
+                "total": len(tasks),
+                "active": active,
+                "completed": completed,
+                "archived": archived,
+            }, separators=(",", ":")))
             return 0
 
         parser.error("a command is required")

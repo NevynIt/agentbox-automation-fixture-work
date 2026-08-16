@@ -103,6 +103,45 @@ class TinyBoardCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(listed.stdout, "1\t[x]\tBuy milk\n2\t[ ]\tbuy MILK\n")
 
+    def test_archive_requires_completion_and_disappears_from_list(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.assertEqual(self.run_cli(database, "add", "active").returncode, 0)
+            self.assertEqual(self.run_cli(database, "add", "done").returncode, 0)
+            self.assertEqual(self.run_cli(database, "complete", "2").returncode, 0)
+            incomplete = self.run_cli(database, "archive", "1")
+            archived = self.run_cli(database, "archive", "2")
+            listed = self.run_cli(database, "list")
+            reloaded = self.run_cli(database, "summary")
+
+        self.assertNotEqual(incomplete.returncode, 0)
+        self.assertIn("incomplete", incomplete.stderr)
+        self.assertEqual(archived.returncode, 0)
+        self.assertEqual(archived.stdout, "archived 2\n")
+        self.assertEqual(listed.stdout, "1\t[ ]\tactive\n")
+        self.assertEqual(json.loads(reloaded.stdout), {
+            "total": 2, "active": 1, "completed": 0, "archived": 1,
+        })
+
+    def test_summary_counts_active_completed_and_archived_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            database.write_text(json.dumps({
+                "version": 1,
+                "tasks": [
+                    {"id": 1, "title": "active", "completed": False, "archived": False},
+                    {"id": 2, "title": "completed", "completed": True, "archived": False},
+                    {"id": 3, "title": "archived", "completed": True, "archived": True},
+                ],
+            }))
+            result = self.run_cli(database, "summary")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(len(result.stdout.splitlines()), 1)
+        self.assertEqual(json.loads(result.stdout), {
+            "total": 3, "active": 1, "completed": 1, "archived": 1,
+        })
+
 
 if __name__ == "__main__":
     unittest.main()

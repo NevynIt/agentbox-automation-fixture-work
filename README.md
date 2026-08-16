@@ -36,3 +36,15 @@ The five ADR features are intentionally **not implemented** in this initial repo
 (`normalize_title(title).casefold()`) matches an existing active task. The
 command exits unsuccessfully and leaves the database unchanged. Completed or
 archived tasks do not block adding the same title again.
+
+## Archive and summary
+
+`archive ID` archives one task, and refuses to archive an incomplete task.
+Archived tasks are omitted from `list` and remain archived after reloading the
+database. Repeating an archive of an already archived completed task is
+idempotent.
+
+`summary` prints one-line JSON. Its `total` count includes all records,
+including archived records. `active` counts incomplete, non-archived tasks;
+`completed` counts completed, non-archived tasks; and `archived` counts
+archived tasks, so these counts sum to `total`.
