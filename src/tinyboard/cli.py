@@ -6,7 +6,13 @@ import argparse
 from pathlib import Path
 
 from . import __version__
-from .domain import InvalidTitleError, Task, allocate_id
+from .domain import (
+    DuplicateActiveTitleError,
+    InvalidTitleError,
+    Task,
+    allocate_id,
+    title_key,
+)
 from .persistence import PersistenceError, load_tasks, save_tasks
 
 
@@ -41,6 +47,20 @@ def main(argv: list[str] | None = None) -> int:
     try:
         tasks = load_tasks(Path(args.db))
         if args.command == "add":
+            requested_key = title_key(args.title)
+            duplicate = next(
+                (
+                    task for task in tasks
+                    if not task.completed
+                    and not task.archived
+                    and title_key(task.title) == requested_key
+                ),
+                None,
+            )
+            if duplicate is not None:
+                raise DuplicateActiveTitleError(
+                    f"an active task already exists with title: {duplicate.title}"
+                )
             task = Task.create(allocate_id(tasks), args.title)
             tasks.append(task)
             save_tasks(args.db, tasks)

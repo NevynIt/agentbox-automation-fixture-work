@@ -11,11 +11,20 @@ class InvalidTitleError(ValueError):
     """Raised when a task title is empty after normalization."""
 
 
+class DuplicateActiveTitleError(ValueError):
+    """Raised when an active task already has the requested title key."""
+
+
 def normalize_title(title: str) -> str:
     """Trim a title and collapse all internal whitespace to ASCII spaces."""
     if not isinstance(title, str):
         raise TypeError("title must be a string")
     return re.sub(r"\s+", " ", title.strip())
+
+
+def title_key(title: str) -> str:
+    """Return the normalized, case-insensitive comparison key for a title."""
+    return normalize_title(title).casefold()
 
 
 @dataclass
@@ -56,4 +65,3 @@ def allocate_id(tasks: Iterable[Task]) -> int:
             raise ValueError("existing task IDs must be positive integers")
         highest = max(highest, task_id)
     return highest + 1
-

@@ -6,6 +6,10 @@ It is intentionally incomplete. The required task-domain, persistence, CLI, dupl
 
 https://github.com/NevynIt/agentbox-automation-fixture-control
 
+Duplicate active titles are rejected by `add` with a non-zero exit status. Titles
+are compared after whitespace normalization and case folding; completed or
+archived tasks do not prevent a new task with the same title key.
+
 ## Baseline
 
 Python 3.11 or newer is required. There are no runtime dependencies.

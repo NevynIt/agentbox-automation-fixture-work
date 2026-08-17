@@ -46,6 +46,31 @@ class TinyBoardCliTests(unittest.TestCase):
             self.assertEqual(self.run_cli(database, "complete", "1").stdout, "completed 1\n")
             self.assertEqual(self.run_cli(database, "list").stdout, "1\t[x]\tTask\n")
 
+    def test_duplicate_active_title_is_rejected_without_mutating_database(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.assertEqual(self.run_cli(database, "add", "  Buy\tmilk ").returncode, 0)
+            before = database.read_bytes()
+
+            duplicate = self.run_cli(database, "add", "buy  MILK")
+
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("active task already exists", duplicate.stderr)
+            self.assertEqual(database.read_bytes(), before)
+            records = json.loads(database.read_text())["tasks"]
+            self.assertEqual(len(records), 1)
+
+    def test_completed_title_can_be_added_again(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.assertEqual(self.run_cli(database, "add", "Buy milk").returncode, 0)
+            self.assertEqual(self.run_cli(database, "complete", "1").returncode, 0)
+
+            added = self.run_cli(database, "add", "buy\tmilk")
+
+            self.assertEqual(added.returncode, 0)
+            self.assertEqual(added.stdout, "added 2\tbuy milk\n")
+
     def test_unknown_id_fails_without_mutating_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             database = Path(directory) / "board.json"
