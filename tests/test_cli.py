@@ -94,6 +94,45 @@ class TinyBoardCliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertEqual(result.stdout, "2\t[x]\tvisible\n")
 
+    def test_archive_requires_completed_task_and_hides_it_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.run_cli(database, "add", "Keep")
+            self.run_cli(database, "add", "Archive me")
+
+            blocked = self.run_cli(database, "archive", "1")
+            self.assertNotEqual(blocked.returncode, 0)
+            self.assertIn("cannot archive incomplete task", blocked.stderr)
+
+            self.assertEqual(self.run_cli(database, "complete", "2").returncode, 0)
+            archived = self.run_cli(database, "archive", "2")
+            self.assertEqual(archived.returncode, 0)
+            self.assertEqual(archived.stdout, "archived 2\n")
+            self.assertEqual(
+                self.run_cli(database, "list").stdout,
+                "1\t[ ]\tKeep\n",
+            )
+            records = json.loads(database.read_text())["tasks"]
+            self.assertTrue(records[1]["archived"])
+
+    def test_summary_is_one_line_json_with_mixed_board_counts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "board.json"
+            self.run_cli(database, "add", "Active")
+            self.run_cli(database, "add", "Completed")
+            self.run_cli(database, "add", "Archived")
+            self.run_cli(database, "complete", "2")
+            self.run_cli(database, "complete", "3")
+            self.run_cli(database, "archive", "3")
+
+            result = self.run_cli(database, "summary")
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stdout.count("\n"), 1)
+            self.assertEqual(
+                json.loads(result.stdout),
+                {"total": 3, "active": 1, "completed": 1, "archived": 1},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from . import __version__
@@ -35,6 +36,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     complete_parser = commands.add_parser("complete")
     complete_parser.add_argument("id", type=int)
+
+    archive_parser = commands.add_parser("archive")
+    archive_parser.add_argument("id", type=int)
+    commands.add_parser("summary")
     return parser
 
 
@@ -72,13 +77,36 @@ def main(argv: list[str] | None = None) -> int:
             ):
                 marker = "x" if task.completed else " "
                 print(f"{task.id}\t[{marker}]\t{task.title}")
-        else:
+        elif args.command == "complete":
             task = next((task for task in tasks if task.id == args.id), None)
             if task is None:
                 parser.error(f"unknown task ID: {args.id}")
             task.completed = True
             save_tasks(args.db, tasks)
             print(f"completed {task.id}")
+        elif args.command == "archive":
+            task = next((task for task in tasks if task.id == args.id), None)
+            if task is None:
+                parser.error(f"unknown task ID: {args.id}")
+            if not task.completed:
+                raise ValueError(f"cannot archive incomplete task: {task.id}")
+            task.archived = True
+            save_tasks(args.db, tasks)
+            print(f"archived {task.id}")
+        else:
+            active = sum(
+                not task.completed and not task.archived for task in tasks
+            )
+            completed = sum(
+                task.completed and not task.archived for task in tasks
+            )
+            archived = sum(task.archived for task in tasks)
+            print(json.dumps({
+                "total": len(tasks),
+                "active": active,
+                "completed": completed,
+                "archived": archived,
+            }, separators=(",", ":")))
     except (InvalidTitleError, PersistenceError, OSError, ValueError) as exc:
         parser.error(str(exc))
     return 0

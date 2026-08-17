@@ -10,6 +10,13 @@ Duplicate active titles are rejected by `add` with a non-zero exit status. Title
 are compared after whitespace normalization and case folding; completed or
 archived tasks do not prevent a new task with the same title key.
 
+The archive interface is `tinyboard archive ID`. It archives one completed task
+by ID; incomplete tasks are rejected, and archived tasks disappear from `list`.
+The `summary` command prints one-line JSON. Its `total` count includes all
+records, including archived records. `active` counts incomplete, non-archived
+records; `completed` counts completed, non-archived records; and `archived`
+counts archived records.
+
 ## Baseline
 
 Python 3.11 or newer is required. There are no runtime dependencies.
